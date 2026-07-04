@@ -4,11 +4,7 @@
   "version": "1.0",
   "description": "Advanced, ultra-minimalist Aetheria Extension",
   "permissions": [
-    "storage",
-    "identity"
-  ],
-  "host_permissions": [
-    "https://aetheria-azure.vercel.app/*"
+    "storage"
   ],
   "background": {
     "service_worker": "background.js"
@@ -16,5 +12,16 @@
   "action": {
     "default_title": "Open Aetheria",
     "default_popup": "panel.html"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "lib/pdf.js",
+        "lib/pdf.worker.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
 }

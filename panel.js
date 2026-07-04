@@ -3,7 +3,7 @@
 // Configuration
 const SUPABASE_URL = 'https://siaeditmldjatmaefxhg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_x_nVVXv6RO0Pvtu6csu7-w_x5zFAWEl';
-const VERCEL_API_URL = 'https://aetheria-azure.vercel.app/api/chat'; // Placeholder
+const VERCEL_API_URL = 'https://YOUR_VERCEL_APP_URL/api/chat'; // Placeholder
 
 // DOM Elements
 const messagesContainer = document.getElementById('messages');
@@ -25,6 +25,12 @@ const authError = document.getElementById('auth-error');
 let chatHistory = [];
 let currentUser = null;
 let supabaseSession = null;
+let documentContext = "";
+
+// PDF.js worker setup
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.js';
+}
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -240,12 +246,27 @@ async function handleUserMessage(text) {
   addMessageToUI('ai', '...', loadingId);
 
   try {
+    let payloadHistory = [...chatHistory];
+
+    // Inject documentContext if it exists
+    if (documentContext) {
+      // Unshift 'ai' first, then 'user', so the resulting array starts with 'user', then 'ai'.
+      payloadHistory.unshift({
+        role: 'ai',
+        content: `I have received the document context and will use it as reference for our conversation.`
+      });
+      payloadHistory.unshift({
+        role: 'user',
+        content: `[System Note: The following is the User's Document/CV Content to be used as reference data for this conversation.]\n\n${documentContext}`
+      });
+    }
+
     const response = await fetch(VERCEL_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ history: chatHistory })
+      body: JSON.stringify({ history: payloadHistory })
     });
 
     if (!response.ok) {
@@ -329,6 +350,7 @@ function saveChatHistory() {
 
 function clearChat() {
   chatHistory = [];
+  documentContext = "";
   messagesContainer.innerHTML = '';
   if (typeof chrome !== 'undefined' && chrome.storage) {
     chrome.storage.local.remove('aetheria_history');
@@ -341,40 +363,82 @@ function scrollToBottom() {
 
 // File Upload Handling
 function handleFileUpload(file) {
-  addMessageToUI('user', `[Uploaded file: ${file.name}]`);
+  const msg = `[Uploaded file: ${file.name}]`;
+  addMessageToUI('user', msg);
+  chatHistory.push({ role: 'user', content: msg });
+  saveChatHistory();
+  logMessageToDB('user', msg);
+
+  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+    parsePDFLocally(file);
+    return;
+  }
 
   const reader = new FileReader();
-
   reader.onload = (e) => {
     const content = e.target.result;
     let parsedText = '';
 
     if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
       parsedText = content;
+      documentContext += `\n\n--- Document: ${file.name} ---\n${parsedText}`;
+      handleAIResponse(`I received and parsed the text file ${file.name}. You can now ask me questions about it.`);
     } else if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
-      parsedText = `CSV Content Preview:\n${content.substring(0, 500)}${content.length > 500 ? '...' : ''}`;
-    } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-      // Basic PDF parsing isn't trivial without a library like pdf.js
-      // We will mock it for this ultra-minimalist foundation
-      parsedText = `[PDF Parsing requires a library like pdf.js. Content size: ${content.byteLength} bytes]`;
+      parsedText = content;
+      documentContext += `\n\n--- CSV Document: ${file.name} ---\n${parsedText}`;
+      handleAIResponse(`I received and parsed the CSV file ${file.name}. You can now ask me questions about it.`);
     } else {
-      parsedText = `[Unsupported file type: ${file.type || file.name}]`;
+      handleAIResponse(`[Unsupported file type: ${file.type || file.name}]`);
     }
-
-    // In a real extension, we would send parsedText to the backend
-    // For now, we simulate AI acknowledging the file
-    setTimeout(() => {
-      handleAIResponse(`I received the file ${file.name}. \n${parsedText}`);
-    }, 500);
   };
 
   reader.onerror = (e) => {
     handleAIResponse(`Failed to read file: ${file.name}`);
   };
 
-  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-      reader.readAsArrayBuffer(file);
-  } else {
-      reader.readAsText(file);
-  }
+  reader.readAsText(file);
+}
+
+async function parsePDFLocally(file) {
+  const loadingId = 'loading-' + Date.now();
+  addMessageToUI('ai', 'Parsing PDF...', loadingId);
+
+  const reader = new FileReader();
+
+  reader.onload = async (e) => {
+    try {
+      const typedarray = new Uint8Array(e.target.result);
+
+      const pdf = await pdfjsLib.getDocument(typedarray).promise;
+      let fullText = "";
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += `\n--- Page ${i} ---\n${pageText}\n`;
+      }
+
+      documentContext += `\n\n--- PDF Document: ${file.name} ---\n${fullText}`;
+
+      const loadingEl = document.getElementById(loadingId);
+      if (loadingEl) loadingEl.remove();
+
+      handleAIResponse(`I have successfully parsed the PDF ${file.name} (${pdf.numPages} pages). You can now ask me questions about its content.`);
+
+    } catch (err) {
+      console.error('PDF parsing error:', err);
+      const loadingEl = document.getElementById(loadingId);
+      if (loadingEl) loadingEl.remove();
+      handleAIResponse(`Error parsing PDF ${file.name}: ${err.message}`);
+    }
+  };
+
+  reader.onerror = (e) => {
+    const loadingEl = document.getElementById(loadingId);
+    if (loadingEl) loadingEl.remove();
+    handleAIResponse(`Failed to read file: ${file.name}`);
+  };
+
+  reader.readAsArrayBuffer(file);
 }

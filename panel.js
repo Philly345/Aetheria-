@@ -3,7 +3,7 @@
 // Configuration
 const SUPABASE_URL = 'https://siaeditmldjatmaefxhg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_x_nVVXv6RO0Pvtu6csu7-w_x5zFAWEl';
-const VERCEL_API_URL = 'https://YOUR_VERCEL_APP_URL/api/chat'; // Placeholder
+const VERCEL_API_URL = 'https://aetheria-azure.vercel.app/api/chat'; // Placeholder
 
 // DOM Elements
 const messagesContainer = document.getElementById('messages');

@@ -210,12 +210,11 @@ body {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   padding: 2px 4px;
   border-radius: 10px;
 }
 .mode-btn:hover { background: rgba(255,255,255,0.05); color: #fff;}
-.mode-btn .icon { font-size: 6px; }
 
 .icon-btn {
   background: transparent;
@@ -223,9 +222,16 @@ body {
   color: #b0b0c0;
   font-size: 8px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
   padding: 2px;
 }
 .icon-btn:hover { color: #fff; }
+
+.icon {
+  width: 1em;
+  height: 1em;
+}
 
 #message-input {
   flex: 1;

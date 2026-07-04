@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Aetheria",
+  "version": "1.0",
+  "description": "Advanced, ultra-minimalist Aetheria Side Panel Extension",
+  "permissions": [
+    "sidePanel",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Aetheria"
+  },
+  "side_panel": {
+    "default_path": "panel.html"
+  }
+}

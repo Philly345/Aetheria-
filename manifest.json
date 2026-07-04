@@ -4,7 +4,11 @@
   "version": "1.0",
   "description": "Advanced, ultra-minimalist Aetheria Extension",
   "permissions": [
-    "storage"
+    "storage",
+    "identity"
+  ],
+  "host_permissions": [
+    "https://aetheria-azure.vercel.app/*"
   ],
   "background": {
     "service_worker": "background.js"

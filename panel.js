@@ -3,7 +3,7 @@
 // Configuration
 const SUPABASE_URL = 'https://siaeditmldjatmaefxhg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_x_nVVXv6RO0Pvtu6csu7-w_x5zFAWEl';
-const VERCEL_API_URL = 'https://aetheria-azure.vercel.app/api/chat'; // Placeholder
+const VERCEL_API_URL = 'https://YOUR_VERCEL_APP_URL/api/chat'; // Placeholder
 
 // DOM Elements
 const messagesContainer = document.getElementById('messages');
@@ -15,7 +15,11 @@ const dropZone = document.getElementById('drop-zone');
 const chatContainer = document.getElementById('chat-container');
 const sendBtn = document.getElementById('send-btn');
 const authOverlay = document.getElementById('auth-overlay');
-const googleSigninBtn = document.getElementById('google-signin-btn');
+const authEmail = document.getElementById('auth-email');
+const authPassword = document.getElementById('auth-password');
+const loginBtn = document.getElementById('login-btn');
+const signupBtn = document.getElementById('signup-btn');
+const authError = document.getElementById('auth-error');
 
 // State
 let chatHistory = [];
@@ -41,6 +45,77 @@ async function checkAuth() {
     });
   } else {
     // For local testing without extension APIs
+    console.log("No chrome.storage found. Auth overlay remains visible for testing.");
+  }
+}
+
+function showError(msg) {
+  authError.textContent = msg;
+  authError.classList.remove('hidden');
+}
+
+function clearError() {
+  authError.textContent = '';
+  authError.classList.add('hidden');
+}
+
+async function handleAuth(type) {
+  clearError();
+  const email = authEmail.value.trim();
+  const password = authPassword.value;
+
+  if (!email || !password) {
+    showError('Email and password required.');
+    return;
+  }
+
+  const endpoint = type === 'signup'
+    ? `${SUPABASE_URL}/auth/v1/signup`
+    : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
+
+  try {
+    const payload = { email, password };
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error_description || data.msg || 'Authentication failed');
+    }
+
+    // For signup with email confirmation enabled, it might return just a user object and no session
+    if (type === 'signup' && !data.session && !data.access_token) {
+      showError('Signup successful. Please check your email to confirm.');
+      return;
+    }
+
+    supabaseSession = data;
+    currentUser = data.user;
+
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+      chrome.storage.local.set({ supabase_session: data });
+    }
+
+    authOverlay.classList.add('hidden');
+    loadChatHistory();
+  } catch (err) {
+    showError(err.message);
+    console.error('Auth error:', err);
+  }
+}
+
+async function login() {
+  if (typeof chrome !== 'undefined' && chrome.storage) {
+    await handleAuth('login');
+  } else {
+    // For local testing without extension APIs
     console.log("Mocking authentication for testing...");
     currentUser = { id: 'mock-user-123' };
     authOverlay.classList.add('hidden');
@@ -48,43 +123,9 @@ async function checkAuth() {
   }
 }
 
-async function signInWithGoogle() {
-  if (typeof chrome !== 'undefined' && chrome.identity) {
-    chrome.identity.getAuthToken({ interactive: true }, async (token) => {
-      if (chrome.runtime.lastError) {
-        console.error(chrome.runtime.lastError.message);
-        return;
-      }
-
-      try {
-        // Exchange Google token for Supabase session
-        const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=id_token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_KEY
-          },
-          body: JSON.stringify({
-            id_token: token,
-            provider: 'google'
-          })
-        });
-
-        if (!response.ok) {
-           throw new Error('Supabase Auth Failed');
-        }
-
-        const data = await response.json();
-        supabaseSession = data;
-        currentUser = data.user;
-
-        chrome.storage.local.set({ supabase_session: data });
-        authOverlay.classList.add('hidden');
-        loadChatHistory();
-      } catch (err) {
-        console.error('Sign in error:', err);
-      }
-    });
+async function signup() {
+  if (typeof chrome !== 'undefined' && chrome.storage) {
+    await handleAuth('signup');
   } else {
     // For local testing without extension APIs
     console.log("Mocking authentication for testing...");
@@ -129,7 +170,17 @@ function setupEventListeners() {
   });
 
   sendBtn.addEventListener('click', submitMessage);
-  googleSigninBtn.addEventListener('click', signInWithGoogle);
+  loginBtn.addEventListener('click', login);
+  signupBtn.addEventListener('click', signup);
+
+  // Handle enter key in auth fields
+  [authEmail, authPassword].forEach(input => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        login();
+      }
+    });
+  });
 
   function submitMessage() {
     const text = messageInput.value.trim();

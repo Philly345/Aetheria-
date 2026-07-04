@@ -1,29 +1,19 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// We removed the Edge runtime config so Vercel uses the default Node.js runtime,
-// which fully supports complex external SDKs like Google Generative AI.
+export const config = {
+  runtime: 'edge',
+};
 
-export default async function handler(req, res) {
-  // Allow cross-origin requests from your Chrome extension
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  // Handle preflight OPTIONS request for CORS
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
+export default async function handler(req) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return new Response('Method Not Allowed', { status: 405 });
   }
 
   try {
-    // Vercel's Node.js runtime automatically parses JSON into req.body
-    const { history } = req.body;
+    const { history } = await req.json();
 
     if (!history || !Array.isArray(history)) {
-      return res.status(400).json({ error: 'Bad Request: Missing or invalid history array' });
+      return new Response('Bad Request: Missing or invalid history array', { status: 400 });
     }
 
     // Initialize Gemini API
@@ -47,10 +37,19 @@ export default async function handler(req, res) {
     const result = await chat.sendMessage(currentMessage);
     const responseText = result.response.text();
 
-    return res.status(200).json({ text: responseText });
-
+    return new Response(JSON.stringify({ text: responseText }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        // Optional: Configure CORS if extension is not using background proxy
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
   } catch (error) {
     console.error('Error in Gemini API route:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }

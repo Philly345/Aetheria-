@@ -77,31 +77,85 @@ body {
   font-size: 9px;
 }
 
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.auth-input {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(100, 150, 255, 0.2);
+  color: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 10px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-input:focus {
+  border-color: rgba(100, 150, 255, 0.5);
+  box-shadow: 0 0 10px rgba(100, 150, 255, 0.2);
+}
+
+.auth-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.auth-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 .auth-btn {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(100, 150, 255, 0.15);
+  border: 1px solid rgba(100, 150, 255, 0.3);
   color: #fff;
   padding: 8px 12px;
   border-radius: 8px;
   cursor: pointer;
   font-family: inherit;
   font-size: 10px;
-  transition: background 0.2s, border-color 0.2s;
+  font-weight: 600;
+  transition: background 0.2s, border-color 0.2s, transform 0.1s;
 }
 
 .auth-btn:hover {
+  background: rgba(100, 150, 255, 0.25);
+  border-color: rgba(100, 150, 255, 0.5);
+}
+
+.auth-btn:active {
+  transform: scale(0.98);
+}
+
+.auth-btn.signup {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.auth-btn.signup:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-.google-icon {
-  width: 14px;
-  height: 14px;
+.auth-error {
+  color: #ff5555;
+  font-size: 8px;
+  margin-top: 8px;
+  text-shadow: 0 0 5px rgba(255, 85, 85, 0.5);
+}
+
+.auth-error.hidden {
+  display: none;
 }
 
 #header {

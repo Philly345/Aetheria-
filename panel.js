@@ -8,6 +8,7 @@ const attachBtn = document.getElementById('attach-btn');
 const fileInput = document.getElementById('file-upload');
 const dropZone = document.getElementById('drop-zone');
 const chatContainer = document.getElementById('chat-container');
+const sendBtn = document.getElementById('send-btn');
 
 // State
 let chatHistory = [];
@@ -24,13 +25,19 @@ function setupEventListeners() {
   messageInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      const text = messageInput.value.trim();
-      if (text) {
-        handleUserMessage(text);
-        messageInput.value = '';
-      }
+      submitMessage();
     }
   });
+
+  sendBtn.addEventListener('click', submitMessage);
+
+  function submitMessage() {
+    const text = messageInput.value.trim();
+    if (text) {
+      handleUserMessage(text);
+      messageInput.value = '';
+    }
+  }
 
   // Clear chat
   clearBtn.addEventListener('click', clearChat);

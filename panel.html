@@ -21,10 +21,20 @@
     </div>
 
     <div id="input-area">
-      <div id="input-wrapper">
+      <div id="input-wrapper" class="pill-bar">
         <label for="file-upload" id="attach-btn" title="Attach File">+</label>
         <input type="file" id="file-upload" accept=".txt,.csv,.pdf">
-        <textarea id="message-input" placeholder="Type..." rows="1"></textarea>
+
+        <div class="dropdowns">
+          <button class="mode-btn"><span class="icon">✏️</span>Normal</button>
+          <button class="mode-btn"><span class="icon">🧠</span>DeepThink</button>
+        </div>
+
+        <button id="voice-btn" class="icon-btn" title="Voice Input">🎤</button>
+
+        <textarea id="message-input" placeholder="Ask anything..." rows="1"></textarea>
+
+        <button id="send-btn" class="gradient-btn" title="Send Message">➤</button>
       </div>
     </div>
   </div>

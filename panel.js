@@ -1,5 +1,10 @@
 // panel.js
 
+// Configuration
+const SUPABASE_URL = 'https://siaeditmldjatmaefxhg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_x_nVVXv6RO0Pvtu6csu7-w_x5zFAWEl';
+const VERCEL_API_URL = 'https://YOUR_VERCEL_APP_URL/api/chat'; // Placeholder
+
 // DOM Elements
 const messagesContainer = document.getElementById('messages');
 const messageInput = document.getElementById('message-input');
@@ -9,15 +14,109 @@ const fileInput = document.getElementById('file-upload');
 const dropZone = document.getElementById('drop-zone');
 const chatContainer = document.getElementById('chat-container');
 const sendBtn = document.getElementById('send-btn');
+const authOverlay = document.getElementById('auth-overlay');
+const googleSigninBtn = document.getElementById('google-signin-btn');
 
 // State
 let chatHistory = [];
+let currentUser = null;
+let supabaseSession = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-  loadChatHistory();
+  checkAuth();
   setupEventListeners();
 });
+
+// Authentication
+async function checkAuth() {
+  if (typeof chrome !== 'undefined' && chrome.storage) {
+    chrome.storage.local.get(['supabase_session'], (result) => {
+      if (result.supabase_session) {
+        supabaseSession = result.supabase_session;
+        currentUser = supabaseSession.user;
+        authOverlay.classList.add('hidden');
+        loadChatHistory();
+      }
+    });
+  } else {
+    // For local testing without extension APIs
+    console.log("Mocking authentication for testing...");
+    currentUser = { id: 'mock-user-123' };
+    authOverlay.classList.add('hidden');
+    loadChatHistory();
+  }
+}
+
+async function signInWithGoogle() {
+  if (typeof chrome !== 'undefined' && chrome.identity) {
+    chrome.identity.getAuthToken({ interactive: true }, async (token) => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError.message);
+        return;
+      }
+
+      try {
+        // Exchange Google token for Supabase session
+        const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=id_token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY
+          },
+          body: JSON.stringify({
+            id_token: token,
+            provider: 'google'
+          })
+        });
+
+        if (!response.ok) {
+           throw new Error('Supabase Auth Failed');
+        }
+
+        const data = await response.json();
+        supabaseSession = data;
+        currentUser = data.user;
+
+        chrome.storage.local.set({ supabase_session: data });
+        authOverlay.classList.add('hidden');
+        loadChatHistory();
+      } catch (err) {
+        console.error('Sign in error:', err);
+      }
+    });
+  } else {
+    // For local testing without extension APIs
+    console.log("Mocking authentication for testing...");
+    currentUser = { id: 'mock-user-123' };
+    authOverlay.classList.add('hidden');
+    loadChatHistory();
+  }
+}
+
+// Supabase DB Logging
+async function logMessageToDB(role, content) {
+  if (!currentUser || !supabaseSession) return;
+
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/conversations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${supabaseSession.access_token}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        role: role,
+        content: content
+      })
+    });
+  } catch (error) {
+    console.error('Failed to log message to DB:', error);
+  }
+}
 
 // Event Listeners
 function setupEventListeners() {
@@ -30,6 +129,7 @@ function setupEventListeners() {
   });
 
   sendBtn.addEventListener('click', submitMessage);
+  googleSigninBtn.addEventListener('click', signInWithGoogle);
 
   function submitMessage() {
     const text = messageInput.value.trim();
@@ -82,23 +182,50 @@ async function handleUserMessage(text) {
   addMessageToUI('user', text);
   chatHistory.push({ role: 'user', content: text });
   saveChatHistory();
+  logMessageToDB('user', text);
 
-  // Simulate AI Response
-  // In a real scenario, this would send data to a backend.
-  setTimeout(() => {
-    const aiResponse = `Echo: ${text}\n\nHere is some code:\n\`\`\`javascript\nconsole.log('Aetheria');\n\`\`\``;
-    handleAIResponse(aiResponse);
-  }, 500);
+  // Show loading state
+  const loadingId = 'loading-' + Date.now();
+  addMessageToUI('ai', '...', loadingId);
+
+  try {
+    const response = await fetch(VERCEL_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ history: chatHistory })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Remove loading message
+    const loadingEl = document.getElementById(loadingId);
+    if (loadingEl) loadingEl.remove();
+
+    handleAIResponse(data.text || 'No response received.');
+  } catch (error) {
+    console.error('AI Fetch Error:', error);
+    const loadingEl = document.getElementById(loadingId);
+    if (loadingEl) loadingEl.remove();
+    handleAIResponse(`[Connection Error: Could not reach Aetheria Brain]`);
+  }
 }
 
 function handleAIResponse(text) {
   addMessageToUI('ai', text);
   chatHistory.push({ role: 'ai', content: text });
   saveChatHistory();
+  logMessageToDB('model', text);
 }
 
-function addMessageToUI(role, text) {
+function addMessageToUI(role, text, id = null) {
   const msgEl = document.createElement('div');
+  if (id) msgEl.id = id;
   msgEl.className = `message ${role}`;
   msgEl.innerHTML = parseMarkdown(text);
   messagesContainer.appendChild(msgEl);

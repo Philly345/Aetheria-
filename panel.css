@@ -32,6 +32,78 @@ body {
   position: relative;
 }
 
+/* Auth Overlay Styles */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(5, 5, 10, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.3s ease;
+}
+
+.overlay.hidden {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.auth-modal {
+  background: rgba(20, 20, 30, 0.8);
+  border: 1px solid rgba(100, 150, 255, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(100, 50, 255, 0.1);
+}
+
+.auth-modal h2 {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: #fff;
+}
+
+.auth-modal p {
+  margin-bottom: 20px;
+  color: #a0a0b0;
+  font-size: 9px;
+}
+
+.auth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.auth-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.google-icon {
+  width: 14px;
+  height: 14px;
+}
+
 #header {
   display: flex;
   justify-content: space-between;

@@ -277,6 +277,11 @@ function setupEventListeners() {
     fileInput.value = ''; // Reset
   });
 
+  attachBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    fileInput.click();
+  });
+
   // Drag and Drop
   chatContainer.addEventListener('dragover', (e) => {
     e.preventDefault();

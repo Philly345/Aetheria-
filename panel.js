@@ -20,12 +20,16 @@ const authPassword = document.getElementById('auth-password');
 const loginBtn = document.getElementById('login-btn');
 const signupBtn = document.getElementById('signup-btn');
 const authError = document.getElementById('auth-error');
+const modeBtns = document.querySelectorAll('.mode-btn');
+const voiceBtn = document.getElementById('voice-btn');
 
 // State
 let chatHistory = [];
 let currentUser = null;
 let supabaseSession = null;
 let documentContext = "";
+let currentMode = 'normal';
+let isRecording = false;
 
 // PDF.js worker setup
 if (typeof pdfjsLib !== 'undefined') {
@@ -199,6 +203,71 @@ function setupEventListeners() {
   // Clear chat
   clearBtn.addEventListener('click', clearChat);
 
+  // Attach File Button
+  attachBtn.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  // Mode Toggles
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      modeBtns.forEach(b => b.classList.remove('active-mode'));
+      btn.classList.add('active-mode');
+
+      const modeText = btn.textContent.trim().toLowerCase();
+      if (modeText.includes('deepthink')) {
+        currentMode = 'deepthink';
+      } else {
+        currentMode = 'normal';
+      }
+    });
+  });
+
+  // Voice Input
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      messageInput.value += (messageInput.value ? ' ' : '') + transcript;
+    };
+
+    recognition.onend = () => {
+      isRecording = false;
+      voiceBtn.classList.remove('recording');
+      voiceBtn.style.color = ''; // Reset visual feedback
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error", event.error);
+      isRecording = false;
+      voiceBtn.classList.remove('recording');
+      voiceBtn.style.color = ''; // Reset visual feedback
+    };
+
+    voiceBtn.addEventListener('click', () => {
+      if (isRecording) {
+        recognition.stop();
+      } else {
+        try {
+          recognition.start();
+          isRecording = true;
+          voiceBtn.classList.add('recording');
+          voiceBtn.style.color = '#ff4757'; // Visual feedback
+        } catch (e) {
+          console.error("Failed to start speech recognition:", e);
+        }
+      }
+    });
+  } else {
+    voiceBtn.addEventListener('click', () => {
+      alert("Speech Recognition API is not supported in this browser.");
+    });
+  }
+
   // File upload via button
   fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -237,9 +306,15 @@ function setupEventListeners() {
 // Message Handling
 async function handleUserMessage(text) {
   addMessageToUI('user', text);
-  chatHistory.push({ role: 'user', content: text });
+
+  let payloadText = text;
+  if (currentMode === 'deepthink') {
+    payloadText = `[DeepThink Mode Active: Please think step-by-step and provide a highly analytical answer]\n${text}`;
+  }
+
+  chatHistory.push({ role: 'user', content: payloadText });
   saveChatHistory();
-  logMessageToDB('user', text);
+  logMessageToDB('user', payloadText);
 
   // Show loading state
   const loadingId = 'loading-' + Date.now();

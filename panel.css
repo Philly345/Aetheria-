@@ -281,23 +281,90 @@ body {
   display: none;
 }
 
+
+
+/* Input Area Re-styling */
 #input-area {
-  padding: 10px 8px;
+  padding: 16px;
   background: transparent;
   position: relative;
   z-index: 100;
+  display: flex;
+  justify-content: center;
+}
+
+/* Glow Backgrounds */
+.glow-bg {
+  position: absolute;
+  width: 150px;
+  height: 60px;
+  border-radius: 50%;
+  filter: blur(40px);
+  z-index: -1;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.6;
+}
+
+.glow-warm {
+  left: 5%;
+  background: radial-gradient(circle, rgba(255,100,80,0.8) 0%, rgba(255,100,80,0) 70%);
+}
+
+.glow-cool {
+  right: 5%;
+  background: radial-gradient(circle, rgba(60,100,255,0.8) 0%, rgba(60,100,255,0) 70%);
 }
 
 .pill-bar {
   display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: #101014;
+  /* Gradient border simulation */
+  border: 1px solid transparent;
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  /* The linear-gradient trick for border */
+  background-image: linear-gradient(#101014, #101014), linear-gradient(90deg, rgba(255,120,100,0.6) 0%, rgba(100,50,255,0.2) 50%, rgba(100,150,255,0.6) 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.input-top {
+  display: flex;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+#message-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 11px;
+  resize: none;
+  outline: none;
+  padding: 0;
+  line-height: 1.4;
+}
+#message-input::placeholder {
+  color: #7a7a8c;
+}
+
+.input-bottom {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 4px;
-  background: rgba(20, 20, 25, 0.85);
-  border: 1px solid rgba(100, 150, 255, 0.3);
-  border-radius: 20px;
-  padding: 4px 6px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), 0 0 10px rgba(100, 50, 255, 0.2);
+  width: 100%;
+}
+
+.bottom-left, .bottom-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 #file-upload {
@@ -309,87 +376,78 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  width: 14px;
-  height: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #a0a0b0;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  font-size: 9px;
-  line-height: 1;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
-
 #attach-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+#attach-btn .icon {
+  width: 12px;
+  height: 12px;
 }
 
-.dropdowns {
-  display: flex;
-  gap: 2px;
-}
-
-.mode-btn {
-  background: transparent;
-  border: none;
-  color: #b0b0c0;
-  font-size: 7px;
+.mode-btn, .action-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
+  color: #a0a0b0;
+  font-size: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 4px;
-  border-radius: 10px;
-}
-.mode-btn:hover { background: rgba(255,255,255,0.05); color: #fff;}
-
-.icon-btn {
-  background: transparent;
-  border: none;
-  color: #b0b0c0;
-  font-size: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  padding: 2px;
-}
-.icon-btn:hover { color: #fff; }
-
-.icon {
-  width: 1em;
-  height: 1em;
+  padding: 4px 10px;
+  border-radius: 12px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
-#message-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: #ffffff;
-  font-family: inherit;
-  font-size: 8px;
-  padding: 2px 4px;
-  resize: none;
-  outline: none;
+.mode-btn:hover, .action-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
-#message-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+
+.mode-btn.active-mode {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mode-btn .icon {
+  width: 12px;
+  height: 12px;
+}
+
+.mode-btn .chevron {
+  width: 10px;
+  height: 10px;
+  margin-left: 2px;
+  opacity: 0.7;
 }
 
 .gradient-btn {
-  background: linear-gradient(135deg, #2a52be, #9b30ff);
+  background: linear-gradient(135deg, #a050ff, #5080ff);
   border: none;
   border-radius: 50%;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   color: #ffffff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 7px;
-  box-shadow: 0 0 8px rgba(155, 48, 255, 0.5);
+  box-shadow: 0 0 10px rgba(160, 80, 255, 0.5);
   transition: transform 0.1s, box-shadow 0.1s;
 }
 .gradient-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 12px rgba(155, 48, 255, 0.8);
+  box-shadow: 0 0 15px rgba(160, 80, 255, 0.8);
+}
+.gradient-btn .icon {
+  width: 12px;
+  height: 12px;
 }

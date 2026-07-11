@@ -2,19 +2,27 @@
   "manifest_version": 3,
   "name": "Aetheria",
   "version": "1.0",
-  "description": "Advanced, ultra-minimalist Aetheria Extension",
+  "description": "Privacy-first Aetheria Extension",
   "permissions": [
-    "storage",
-    "identity"
+    "storage"
   ],
   "host_permissions": [
     "https://aetheria-azure.vercel.app/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
     "default_title": "Open Aetheria",
-    "default_popup": "panel.html"
+    "default_popup": "panel.html",
+    "default_popup_size": {
+      "width": 400,
+      "height": 600
+    }
   }
 }

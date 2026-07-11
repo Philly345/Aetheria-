@@ -1,8 +1,24 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+﻿import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const config = {
   runtime: 'edge',
 };
+
+function parseDataUrlImage(dataUrl) {
+  if (!dataUrl || typeof dataUrl !== 'string') {
+    return null;
+  }
+
+  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    mimeType: match[1],
+    data: match[2],
+  };
+}
 
 export default async function handler(req) {
   if (req.method !== 'POST') {
@@ -10,38 +26,47 @@ export default async function handler(req) {
   }
 
   try {
-    const { history } = await req.json();
+    const { history, screenshotDataUrl } = await req.json();
 
     if (!history || !Array.isArray(history)) {
       return new Response('Bad Request: Missing or invalid history array', { status: 400 });
     }
 
-    // Initialize Gemini API
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    // Format history for Gemini (excluding the very last message which is the current prompt)
-    const geminiHistory = history.slice(0, -1).map(msg => ({
+    const geminiHistory = history.slice(0, -1).map((msg) => ({
       role: msg.role === 'ai' ? 'model' : 'user',
       parts: [{ text: msg.content }],
     }));
 
     const currentMessage = history[history.length - 1].content;
+    const screenshotImage = parseDataUrlImage(screenshotDataUrl);
 
-    // Start chat with history
     const chat = model.startChat({
       history: geminiHistory,
     });
 
-    // Send the current message
-    const result = await chat.sendMessage(currentMessage);
+    const messageParts = [{ text: currentMessage }];
+    if (screenshotImage) {
+      messageParts.push({
+        inlineData: {
+          mimeType: screenshotImage.mimeType,
+          data: screenshotImage.data,
+        },
+      });
+      messageParts.push({
+        text: 'The attached image is the current shared screen snapshot. Use it as live visual context.',
+      });
+    }
+
+    const result = await chat.sendMessage(messageParts);
     const responseText = result.response.text();
 
     return new Response(JSON.stringify({ text: responseText }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        // Optional: Configure CORS if extension is not using background proxy
         'Access-Control-Allow-Origin': '*',
       },
     });
@@ -49,7 +74,7 @@ export default async function handler(req) {
     console.error('Error in Gemini API route:', error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

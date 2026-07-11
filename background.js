@@ -1,4 +1,5 @@
-// background.js
 chrome.runtime.onInstalled.addListener(() => {
-  console.log("Aetheria Extension Installed.");
+  if (chrome.action && chrome.action.setBadgeText) {
+    chrome.action.setBadgeText({ text: '' });
+  }
 });

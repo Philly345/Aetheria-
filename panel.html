@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -8,16 +8,32 @@
 </head>
 <body>
   <div id="app">
-    <div id="auth-overlay" class="overlay">
+    <div id="auth-overlay" class="overlay hidden">
       <div class="auth-modal">
-        <h2>AETHERIA</h2>
-        <p>Access requires authentication.</p>
+        <h2>PRIVACY SETTINGS</h2>
+        <p>No account is required. Keep everything local or connect your own AI endpoint.</p>
         <div class="auth-form">
-          <input type="email" id="auth-email" placeholder="Email" class="auth-input">
-          <input type="password" id="auth-password" placeholder="Password" class="auth-input">
+          <label class="settings-label" for="ai-endpoint">AI endpoint</label>
+          <input type="url" id="ai-endpoint" placeholder="https://example.com/api/chat" class="auth-input">
+
+          <label class="toggle-row">
+            <input type="checkbox" id="local-only-toggle">
+            <span>Local-only mode</span>
+          </label>
+
+          <label class="toggle-row">
+            <input type="checkbox" id="redact-toggle">
+            <span>Redact personal data before sending</span>
+          </label>
+
+          <label class="toggle-row">
+            <input type="checkbox" id="history-toggle">
+            <span>Store chat history locally</span>
+          </label>
+
           <div class="auth-actions">
-            <button id="login-btn" class="auth-btn">Log In</button>
-            <button id="signup-btn" class="auth-btn signup">Sign Up</button>
+            <button id="save-settings-btn" class="auth-btn">Save</button>
+            <button id="close-settings-btn" class="auth-btn signup">Close</button>
           </div>
           <div id="auth-error" class="auth-error hidden"></div>
         </div>
@@ -26,7 +42,11 @@
 
     <div id="header">
       <span id="title">AETHERIA</span>
-      <button id="clear-btn" title="Clear Chat">X</button>
+      <div id="header-actions">
+        <span id="privacy-status" class="privacy-status">Private mode ready</span>
+        <button id="settings-btn" title="Privacy Settings">⚙</button>
+        <button id="clear-btn" title="Clear Chat">X</button>
+      </div>
     </div>
 
     <div id="chat-container">
@@ -36,9 +56,7 @@
       </div>
     </div>
 
-
     <div id="input-area">
-      <!-- Glow backgrounds -->
       <div class="glow-bg glow-warm"></div>
       <div class="glow-bg glow-cool"></div>
 
@@ -48,38 +66,35 @@
         </div>
         <div class="input-bottom">
           <div class="bottom-left">
-            <label for="file-upload" id="attach-btn" title="Attach File">
+            <button type="button" id="attach-btn" title="Attach File" aria-label="Attach File">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-            </label>
+            </button>
             <input type="file" id="file-upload" accept=".txt,.csv,.pdf">
 
-            <button class="mode-btn active-mode">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-              </svg>
-              Normal
-              <svg class="icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </button>
-            <button class="mode-btn">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9.52 14.5a5.5 5.5 0 0 1-5.02-3.1 5.5 5.5 0 0 1 1.05-6.3A5.5 5.5 0 0 1 12 3a5.5 5.5 0 0 1 6.45 2.1 5.5 5.5 0 0 1 1.05 6.3 5.5 5.5 0 0 1-5.02 3.1"></path>
-                <line x1="9" y1="18" x2="15" y2="18"></line>
-                <line x1="10" y1="22" x2="14" y2="22"></line>
-                <line x1="12" y1="14.5" x2="12" y2="22"></line>
-              </svg>
-              DeepThink
-              <svg class="icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </button>
+            <div class="mode-dropdown" id="mode-dropdown">
+              <button type="button" id="mode-trigger" class="mode-btn active-mode" aria-haspopup="true" aria-expanded="false">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                <span id="mode-label">Normal</span>
+                <svg class="icon chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div id="mode-menu" class="mode-menu hidden" role="menu">
+                <button type="button" class="mode-option active" data-mode="normal" role="menuitem">Normal</button>
+                <button type="button" class="mode-option" data-mode="deepthink" role="menuitem">DeepThink</button>
+              </div>
+            </div>
+
+            <button type="button" id="talk-btn" class="action-pill" title="Talk to AI">Talk</button>
+            <button type="button" id="screen-btn" class="action-pill" title="Share Screen">Share</button>
           </div>
           <div class="bottom-right">
-            <button id="voice-btn" class="icon-btn action-pill" title="Voice Input">
+            <button id="voice-btn" class="action-pill" title="Voice Dictation">
               <svg class="icon waveform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="4" x2="12" y2="20"></line>
                 <line x1="8" y1="9" x2="8" y2="15"></line>
@@ -87,7 +102,7 @@
                 <line x1="4" y1="11" x2="4" y2="13"></line>
                 <line x1="20" y1="11" x2="20" y2="13"></line>
               </svg>
-              Voice
+              <span id="voice-label">Dictate</span>
             </button>
 
             <button id="send-btn" class="gradient-btn" title="Send Message">
@@ -101,7 +116,6 @@
       </div>
     </div>
   </div>
-  <!-- We can use marked.js for markdown rendering, or a simple custom one. For independence, we'll write a simple regex-based parser in panel.js if external scripts are not desired. -->
   <script src="lib/pdf.js"></script>
   <script src="panel.js"></script>
 </body>

@@ -32,6 +32,14 @@ export default async function handler(req) {
       return new Response('Bad Request: Missing or invalid history array', { status: 400 });
     }
 
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY is not set in environment variables');
+      return new Response(JSON.stringify({ error: 'Server configuration error: Missing API key' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
@@ -72,7 +80,8 @@ export default async function handler(req) {
     });
   } catch (error) {
     console.error('Error in Gemini API route:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+    console.error('Error details:', error.message, error.stack);
+    return new Response(JSON.stringify({ error: 'Internal Server Error: ' + error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

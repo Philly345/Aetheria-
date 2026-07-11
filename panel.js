@@ -758,6 +758,7 @@ async function handleUserMessage(text) {
   try {
     const payloadHistory = buildRemoteHistory();
     const endpoint = getEffectiveEndpoint();
+    console.log('Attempting to connect to endpoint:', endpoint);
     const screenshotDataUrl = isScreenSharing ? await captureScreenSnapshotDataUrl() : null;
     if (isScreenSharing && !screenshotDataUrl) {
       handleAIResponse('[Screen snapshot failed. Try re-enabling Share.]');
@@ -768,8 +769,9 @@ async function handleUserMessage(text) {
     handleAIResponse(response.text || 'No response received.');
   } catch (error) {
     console.error('AI Fetch Error:', error);
+    console.error('Error details:', error.message, error.stack);
     removeLoadingMessage(loadingId);
-    handleAIResponse('[Connection Error: Could not reach Aetheria Brain]');
+    handleAIResponse('[Connection Error: ' + error.message + ']');
   }
 }
 
